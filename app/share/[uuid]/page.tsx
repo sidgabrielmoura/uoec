@@ -8,17 +8,26 @@ import { getSharedLinkByUuid } from "@/utils/local-storage-utils"
 import type { StoredImage } from "@/types/image"
 import type { SharedLink } from "@/types/share"
 import ImageGrid from "@/components/image-grid"
+import { redirect, useParams } from "next/navigation"
 
-export default function SharedLinkPage({ params }: { params: { uuid: string } }) {
+export default function SharedLinkPage() {
+  const { uuid } = useParams<{ uuid: string }>()
   const [sharedLink, setSharedLink] = useState<SharedLink | null>(null)
   const [images, setImages] = useState<StoredImage[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const navigateTo = (path: string) => {
+    setLoading(true)
+    setTimeout(() => {
+      redirect(path)
+    }, 1000);
+  }
 
   useEffect(() => {
     const loadSharedLink = () => {
       try {
-        const link = getSharedLinkByUuid(params.uuid)
+        const link = getSharedLinkByUuid(uuid)
         if (link) {
           setSharedLink(link)
           setImages(link.images)
@@ -34,7 +43,7 @@ export default function SharedLinkPage({ params }: { params: { uuid: string } })
     }
 
     loadSharedLink()
-  }, [params.uuid])
+  }, [uuid])
 
   const downloadImage = (image: StoredImage) => {
     const link = document.createElement("a")
@@ -59,34 +68,50 @@ export default function SharedLinkPage({ params }: { params: { uuid: string } })
 
   return (
     <main className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <Link href="/">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Button>
-        </Link>
-      </div>
-
-      <div>
-        <h1 className="text-3xl font-bold mb-6">Shared Images</h1>
-
-        {images.length > 0 ? (
-          <div>
-            <div className="mb-4">
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => images.forEach(downloadImage)}>
-                <Download className="h-4 w-4" />
-                Download All
+      {loading ? (
+        <div className="h-[calc(100vh-200px)] flex items-center justify-center">
+          <div className="honeycomb">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="mb-6">
+            <div onClick={() => navigateTo('/')}>
+              <Button variant="ghost" size="sm" className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Voltar ao início
               </Button>
             </div>
-            <ImageGrid images={images} isSharedView={true} onDownload={downloadImage} />
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <p className="text-gray-500">No images found in this shared link</p>
+
+          <div>
+            <h1 className="text-3xl font-bold mb-6">Imagens Compartilhadas</h1>
+
+            {images.length > 0 ? (
+              <div>
+                <div className="mb-4">
+                  <Button variant="default" size="sm" className="gap-2 bg-indigo-500 hover:bg-indigo-500" onClick={() => images.forEach(downloadImage)}>
+                    <Download className="h-4 w-4" />
+                    Download All
+                  </Button>
+                </div>
+                <ImageGrid images={images} isSharedView={true} onDownload={downloadImage} />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 text-center">
+                <p className="text-gray-500">Não há imagens encontradas para esse link</p>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </main>
   )
 }

@@ -7,7 +7,6 @@ const IMAGES_STORAGE_KEY = "meg-uploader-images"
 const SHARED_LINKS_STORAGE_KEY = "meg-uploader-shared-links"
 const DEFAULT_EXPIRATION_DAYS = 7
 
-// Helper function to get localStorage (with SSR safety)
 const getLocalStorage = () => {
   if (typeof window !== "undefined") {
     return window.localStorage
@@ -15,13 +14,10 @@ const getLocalStorage = () => {
   return null
 }
 
-// Image functions
 export const saveImage = async (file: File): Promise<{ success: boolean; error?: string }> => {
   try {
-    // Convert file to base64
     const dataUrl = await fileToDataUrl(file)
 
-    // Create image object
     const image: StoredImage = {
       id: uuidv4(),
       name: file.name,
@@ -29,25 +25,21 @@ export const saveImage = async (file: File): Promise<{ success: boolean; error?:
       type: file.type,
       dataUrl,
       uploadedAt: Date.now(),
-      categories: [], // Will be populated by AI classification later
+      categories: [],
     }
 
-    // Get existing images
     const images = getImages()
 
-    // Check for duplicates (by name and content)
     const isDuplicate = images.some(
       (existingImage) => existingImage.name === file.name && existingImage.size === file.size,
     )
 
     if (isDuplicate) {
-      return { success: false, error: "This image already exists in your gallery" }
+      return { success: false, error: `A imagem: ${file.name} já existe na sua galeria` }
     }
 
-    // Add new image
     images.push(image)
 
-    // Save to localStorage
     const localStorage = getLocalStorage()
     if (localStorage) {
       localStorage.setItem(IMAGES_STORAGE_KEY, JSON.stringify(images))
@@ -57,7 +49,7 @@ export const saveImage = async (file: File): Promise<{ success: boolean; error?:
     }
   } catch (error) {
     console.error("Error saving image:", error)
-    return { success: false, error: "Failed to save image" }
+    return { success: false, error: "Não conseguimos salvar sua imagem" }
   }
 }
 
@@ -123,7 +115,7 @@ export const createSharedLink = (images: StoredImage[]): SharedLink => {
   try {
     const uuid = uuidv4()
     const createdAt = Date.now()
-    const expiresAt = createdAt + DEFAULT_EXPIRATION_DAYS * 24 * 60 * 60 * 1000 // 7 days
+    const expiresAt = createdAt + DEFAULT_EXPIRATION_DAYS * 24 * 60 * 60 * 1000
 
     const sharedLink: SharedLink = {
       uuid,

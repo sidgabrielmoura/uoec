@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Trash2 } from "lucide-react"
 import { getSharedLinks, deleteSharedLink } from "@/utils/local-storage-utils"
 import type { SharedLink } from "@/types/share"
+import { redirect } from "next/navigation"
 
 export default function SharePage() {
   const [sharedLinks, setSharedLinks] = useState<SharedLink[]>([])
@@ -39,77 +40,92 @@ export default function SharePage() {
     return new Date(timestamp).toLocaleString()
   }
 
+  const [loading, setLoading] = useState(false)
+  const navigateTo = (path: string) => {
+    setLoading(true)
+    setTimeout(() => {
+      redirect(path)
+    }, 1000);
+  }
+
   return (
-    <main className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <Link href="/">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Button>
-        </Link>
-      </div>
-
-      <div>
-        <h1 className="text-3xl font-bold mb-6">Shared Links</h1>
-
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <p>Loading shared links...</p>
+    <main className="container mx-auto px-4 py-10">
+      {loading ? (
+        <div className="h-[calc(100vh-200px)] flex items-center justify-center">
+          <div className="honeycomb">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
           </div>
-        ) : sharedLinks.length > 0 ? (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Link
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Expires
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {sharedLinks.map((link) => (
-                  <tr key={link.uuid}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Link href={`/share/${link.uuid}`} className="text-blue-600 hover:underline">
-                        {`${window.location.origin}/share/${link.uuid}`}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">{formatDate(link.createdAt)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{formatDate(link.expiresAt)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(link.uuid)}
-                        className="text-red-600 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </td>
+        </div>
+      ) : (
+        <>
+          <div className="mb-6">
+            <div onClick={() => navigateTo('/')}>
+              <Button variant="ghost" size="sm" className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Voltar ao início
+              </Button>
+            </div>
+          </div>
+
+          <h1 className="text-2xl sm:text-3xl font-bold mb-6">Links Compartilhados</h1>
+
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <p className="text-neutral-500">Carregando links...</p>
+            </div>
+          ) : sharedLinks.length > 0 ? (
+            <div className="overflow-auto rounded-2xl border border-zinc-700 shadow-sm">
+              <table className="min-w-full divide-y divide-zinc-600 text-sm">
+                <thead className="bg-zinc-800">
+                  <tr>
+                    <th className="px-6 py-3 text-left font-medium">Link</th>
+                    <th className="px-6 py-3 text-left font-medium">Criado em</th>
+                    <th className="px-6 py-3 text-left font-medium">Expira em</th>
+                    <th className="px-6 py-3 text-left font-medium">Ações</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <p className="text-gray-500 mb-4">No shared links found</p>
-            <Link href="/gallery">
-              <Button>Go to Gallery</Button>
-            </Link>
-          </div>
-        )}
-      </div>
+                </thead>
+                <tbody className="divide-y divide-zinc-600 bg-zinc-700">
+                  {sharedLinks.map((link) => (
+                    <tr key={link.uuid}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div onClick={() => navigateTo(`/share/${link.uuid}`)} className="text-blue-300 hover:underline break-all cursor-pointer">
+                          {`${typeof window !== 'undefined' ? window.location.origin : ''}/share/${link.uuid}`}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">{formatDate(link.createdAt)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{formatDate(link.expiresAt)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(link.uuid)}
+                          className="text-red-500 hover:text-red-600 hover:bg-zinc-600"
+                          aria-label="Excluir link"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-64 text-center">
+              <p className="text-neutral-500 mb-4">Nenhum link compartilhado encontrado</p>
+              <div onClick={() => navigateTo('/gallery')}>
+                <Button className="text-sm bg-indigo-500 hover:bg-indigo-500 button-up">Ir para Galeria</Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </main>
   )
 }

@@ -8,7 +8,8 @@ import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import Cropper from "react-easy-crop"
-import type { Point, Area } from "react-easy-crop/types"
+import * as SliderPrimitive from "@radix-ui/react-slider"
+import type { Point, Area } from "react-easy-crop"
 import { getCroppedImg } from "@/utils/crop-utils"
 import type { StoredImage } from "@/types/image"
 
@@ -21,7 +22,7 @@ export default function ImageEditor({ image, onSave }: ImageEditorProps) {
   const searchParams = useSearchParams()
   const initialMode = searchParams.get("mode") === "crop" ? "crop" : "edit"
 
-  const [mode, setMode] = useState(initialMode)
+  const [mode, setMode] = useState<any>(initialMode)
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
@@ -60,13 +61,8 @@ export default function ImageEditor({ image, onSave }: ImageEditorProps) {
   const handleColumnCrop = async () => {
     try {
       setIsSaving(true)
-
-      // Logic for column-based cropping would go here
-      // This is a placeholder for the actual implementation
-
       const editedImage: StoredImage = {
         ...image,
-        // Update with column-cropped image
         editedAt: Date.now(),
       }
 
@@ -81,41 +77,54 @@ export default function ImageEditor({ image, onSave }: ImageEditorProps) {
   return (
     <div className="space-y-6">
       <Tabs value={mode} onValueChange={setMode} className="w-full">
-        <TabsList className="grid grid-cols-2">
-          <TabsTrigger value="edit">Basic Edit</TabsTrigger>
-          <TabsTrigger value="crop">Crop</TabsTrigger>
+        <TabsList className="grid grid-cols-2 gap-2">
+          <TabsTrigger value="edit" className={mode === "edit" ? "!bg-indigo-500 text-white rounded-lg" : "text-gray-50 rounded-lg"}>Edição Básica</TabsTrigger>
+          <TabsTrigger value="crop" className={mode === "crop" ? "!bg-indigo-500 text-white rounded-lg" : "text-gray-50 rounded-lg"}>Recorte</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="edit" className="space-y-4">
-          <div className="aspect-square relative bg-gray-100 rounded-md overflow-hidden">
-            <img src={image.dataUrl || "/placeholder.svg"} alt={image.name} className="w-full h-full object-contain" />
+        {/* Edição Básica */}
+        <TabsContent value="edit" className="space-y-6">
+          <div className="aspect-square relative bg-gray-100 rounded-xl overflow-hidden shadow-md">
+            <img
+              src={image.dataUrl || "/placeholder.svg"}
+              alt={image.name}
+              className="w-full h-full object-contain transition-transform duration-300"
+              style={{ transform: `rotate(${rotation}deg)` }}
+            />
           </div>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Rotation</Label>
-              <Slider
+              <Label>Rotação</Label>
+              <SliderPrimitive.Root
                 value={[rotation]}
                 min={0}
-                max={360}
+                max={180}
                 step={1}
                 onValueChange={(values) => setRotation(values[0])}
-              />
+                className="relative flex w-full touch-none select-none items-center"
+              >
+                <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-gray-300">
+                  <SliderPrimitive.Range className="absolute h-full bg-purple-500" />
+                </SliderPrimitive.Track>
+                <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-white bg-purple-500 shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-purple-300" />
+              </SliderPrimitive.Root>
               <div className="flex justify-between text-xs text-gray-500">
                 <span>0°</span>
+                <span>90°</span>
                 <span>180°</span>
-                <span>360°</span>
               </div>
             </div>
 
-            <Button onClick={handleSave} disabled={isSaving} className="w-full">
-              {isSaving ? "Saving..." : "Save Changes"}
+            <Button onClick={handleSave} disabled={isSaving} className="w-full bg-indigo-500 hover:bg-indigo-500">
+              {isSaving ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </div>
         </TabsContent>
 
-        <TabsContent value="crop" className="space-y-4">
-          <div className="aspect-square relative bg-gray-100 rounded-md overflow-hidden">
+        {/* Recorte */}
+        <TabsContent value="crop" className="space-y-6">
+          <div className="aspect-square relative bg-gray-100 rounded-xl overflow-hidden shadow-md">
             <Cropper
               image={image.dataUrl}
               crop={crop}
@@ -132,43 +141,64 @@ export default function ImageEditor({ image, onSave }: ImageEditorProps) {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Zoom</Label>
-              <Slider value={[zoom]} min={1} max={3} step={0.1} onValueChange={(values) => setZoom(values[0])} />
+              <SliderPrimitive.Root
+                value={[zoom]}
+                min={1}
+                max={3}
+                step={0.1}
+                onValueChange={(values) => setZoom(values[0])}
+                className="relative flex w-full touch-none select-none items-center"
+              >
+                <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-gray-300">
+                  <SliderPrimitive.Range className="absolute h-full bg-purple-500" />
+                </SliderPrimitive.Track>
+                <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-white bg-purple-500 shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-purple-300" />
+              </SliderPrimitive.Root>
             </div>
 
             <div className="space-y-2">
-              <Label>Rotation</Label>
-              <Slider
+              <Label>Rotação</Label>
+              <SliderPrimitive.Root
                 value={[rotation]}
                 min={0}
-                max={360}
+                max={180}
                 step={1}
                 onValueChange={(values) => setRotation(values[0])}
-              />
+                className="relative flex w-full touch-none select-none items-center"
+              >
+                <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-gray-300">
+                  <SliderPrimitive.Range className="absolute h-full bg-purple-500" />
+                </SliderPrimitive.Track>
+                <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-white bg-purple-500 shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-purple-300" />
+              </SliderPrimitive.Root>
             </div>
 
             <div className="space-y-2">
-              <Label>Crop by Columns</Label>
-              <div className="flex items-center space-x-2">
+              <Label>Dividir por colunas</Label>
+              <div className="flex items-center space-x-3">
                 <Input
                   type="number"
                   min={2}
                   max={10}
                   value={columns}
-                  onChange={(e) => setColumns(Number.parseInt(e.target.value) || 2)}
-                  className="w-20"
+                  onChange={(e) =>
+                    setColumns(Number.parseInt(e.target.value) || 2)
+                  }
+                  className="w-24"
                 />
                 <Button variant="outline" onClick={handleColumnCrop} disabled={isSaving}>
-                  Split Image
+                  Dividir Imagem
                 </Button>
               </div>
             </div>
 
-            <Button onClick={handleSave} disabled={isSaving} className="w-full">
-              {isSaving ? "Saving..." : "Save Cropped Image"}
+            <Button onClick={handleSave} disabled={isSaving} className="w-full bg-indigo-500 hover:bg-indigo-500">
+              {isSaving ? "Salvando..." : "Salvar Imagem Recortada"}
             </Button>
           </div>
         </TabsContent>
       </Tabs>
     </div>
+
   )
 }

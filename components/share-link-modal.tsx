@@ -25,24 +25,40 @@ export default function ShareLinkModal({ isOpen, onClose, shareLink }: ShareLink
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-zinc-900 text-zinc-100 border border-zinc-700 rounded-xl shadow-lg">
         <DialogHeader>
-          <DialogTitle>Share Link</DialogTitle>
+          <DialogTitle className="text-lg font-semibold">
+            🔗 Compartilhar Imagem
+          </DialogTitle>
         </DialogHeader>
-        <div className="flex items-center space-x-2">
-          <div className="grid flex-1 gap-2">
-            <Input readOnly value={shareLink || ""} className="w-full" />
+
+        <div className="flex flex-col gap-3 mt-2">
+          <div className="flex items-center gap-2">
+            <Input
+              readOnly
+              value={shareLink || ""}
+              className="flex-1 bg-zinc-800 border border-zinc-700 text-sm text-zinc-100 placeholder:text-zinc-500"
+            />
+            <Button
+              type="button"
+              size="icon"
+              onClick={handleCopy}
+              variant={copied ? "default" : "outline"}
+              className={copied ? "bg-indigo-500 text-white" : "border-zinc-600"}
+            >
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
           </div>
-          <Button type="button" size="icon" onClick={handleCopy} variant={copied ? "default" : "outline"}>
-            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-          </Button>
+
+          <p className="text-xs text-zinc-400">
+            Este link expira em <span className="text-indigo-400 font-medium">7 dias</span>. 
+            Qualquer pessoa com o link poderá visualizar e baixar as imagens.
+          </p>
         </div>
-        <p className="text-sm text-gray-500">
-          This link will expire in 7 days. Anyone with this link can view and download the shared images.
-        </p>
-        <DialogFooter className="sm:justify-start">
-          <Button type="button" variant="secondary" onClick={onClose}>
-            Close
+
+        <DialogFooter className="mt-4 sm:justify-end">
+          <Button type="button" variant="ghost" onClick={onClose} className="text-zinc-50 bg-indigo-500 hover:bg-indigo-500">
+            Fechar
           </Button>
         </DialogFooter>
       </DialogContent>
