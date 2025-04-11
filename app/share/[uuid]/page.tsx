@@ -4,11 +4,13 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Download } from "lucide-react"
+import JSZip from "jszip"
 import { getSharedLinkByUuid } from "@/utils/local-storage-utils"
 import type { StoredImage } from "@/types/image"
 import type { SharedLink } from "@/types/share"
 import ImageGrid from "@/components/image-grid"
 import { redirect, useParams } from "next/navigation"
+import { saveAs } from "file-saver"
 
 export default function SharedLinkPage() {
   const { uuid } = useParams<{ uuid: string }>()
@@ -45,13 +47,34 @@ export default function SharedLinkPage() {
     loadSharedLink()
   }, [uuid])
 
-  const downloadImage = (image: StoredImage) => {
+  const downloadSelectedImage = (image: StoredImage) => {
     const link = document.createElement("a")
     link.href = image.dataUrl
     link.download = image.name
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+  }
+
+  const downloadImagesAsZip = async (images: StoredImage[]) => {
+    if(images.length === 1){
+      const link = document.createElement("a")
+      link.href = images[0].dataUrl
+      link.download = images[0].name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+
+    const zip = new JSZip()
+
+    images.forEach((image) => {
+      const base64 = image.dataUrl.split(",")[1]
+      zip.file(image.name, base64, {base64: true})
+    })
+
+    const content = await zip.generateAsync({ type: "blob" })
+    saveAs(content, "U.O.E.C_images.zip")
   }
 
   if (isLoading) {
@@ -96,13 +119,18 @@ export default function SharedLinkPage() {
 
             {images.length > 0 ? (
               <div>
-                <div className="mb-4">
-                  <Button variant="default" size="sm" className="gap-2 bg-indigo-500 hover:bg-indigo-500" onClick={() => images.forEach(downloadImage)}>
+                <div className="mb-4 flex gap-3 items-center">
+                  <Button variant="default" size="sm" className="gap-2 button-up bg-indigo-500 hover:bg-indigo-500" onClick={() => downloadImagesAsZip(images)}>
                     <Download className="h-4 w-4" />
-                    Download All
+                    Baixar Todas
+                  </Button>
+
+                  <Button disabled variant="default" size="sm" className="gap-2 button-up bg-indigo-500 hover:bg-indigo-500" onClick={() => downloadImagesAsZip(images)}>
+                    <Download className="h-4 w-4" />
+                    Baixar Todas (Máxima qualidade)
                   </Button>
                 </div>
-                <ImageGrid images={images} isSharedView={true} onDownload={downloadImage} />
+                <ImageGrid images={images} isSharedView={true} onDownload={downloadSelectedImage} />
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-64 text-center">
