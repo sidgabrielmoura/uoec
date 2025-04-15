@@ -28,10 +28,12 @@ export default function GalleryPage() {
   const [shareLink, setShareLink] = useState<string | null>(null)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [clearLoading, setClearLoading] = useState(false)
-  const userEmail = localStorage.getItem("userEmail")
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const [findEmail, setFindEmail] = useState(false)
 
   useEffect(() => {
+    const email = localStorage.getItem("userEmail")
+    setUserEmail(email)
     const loadImages = () => {
       try {
         getImagesFromSupabase().then((response) => {
