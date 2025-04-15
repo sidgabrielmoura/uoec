@@ -3,9 +3,9 @@ export interface StoredImage {
   name: string
   size: number
   type: string
-  dataUrl: string
+  storage_url: string
   uploadedAt: number
-  editedAt?: number
+  created_at?: string
   classifiedAt?: number
   categories?: string[]
 }

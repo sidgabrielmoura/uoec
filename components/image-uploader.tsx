@@ -156,7 +156,7 @@ export default function ImageUploader({ onUpload, isUploading }: ImageUploaderPr
       ) : (
         <div className="w-full flex gap-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-zinc-600 animate-pulse w-full h-[150px] rounded-2xl" />
+            <div key={i} className="bg-zinc-600 w-full h-[150px] rounded-2xl" />
           ))}
         </div>
       )}

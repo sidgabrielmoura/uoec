@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -11,14 +11,17 @@ import { deleteImage, createSharedLink } from "@/utils/local-storage-utils"
 import ShareLinkModal from "@/components/share-link-modal"
 import type { StoredImage } from "@/types/image"
 import { motion, AnimatePresence } from "framer-motion"
+import { deleteImageFromSupabase, getImagesFromSupabase } from "@/utils/supabase"
+import { toast } from "sonner"
 
 interface ImageGridProps {
   images: StoredImage[]
   isSharedView?: boolean
   onDownload?: (image: StoredImage) => void
+  onDelete?: (id: string) => void
 }
 
-export default function ImageGrid({ images, isSharedView = false, onDownload }: ImageGridProps) {
+export default function ImageGrid({ images, isSharedView = false, onDownload, onDelete }: ImageGridProps) {
   const [selectedImage, setSelectedImage] = useState<StoredImage | null>(null)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [shareLink, setShareLink] = useState<string | null>(null)
@@ -39,9 +42,12 @@ export default function ImageGrid({ images, isSharedView = false, onDownload }: 
     setShowImg({ img: "", status: false })
   }
 
-  const handleDelete = (id: string) => {
-    deleteImage(id)
-    window.location.reload()
+  const handleDelete = async (id: string) => {
+    if(onDelete){
+      onDelete(id)
+    }else{
+      console.log('deu erro meu chapa, te vira')
+    }
   }
 
   const handleShare = (image: StoredImage) => {
@@ -62,7 +68,7 @@ export default function ImageGrid({ images, isSharedView = false, onDownload }: 
       onDownload(image)
     } else {
       const link = document.createElement("a")
-      link.href = image.dataUrl
+      link.href = image.storage_url
       link.download = image.name
       document.body.appendChild(link)
       link.click()
@@ -76,8 +82,15 @@ export default function ImageGrid({ images, isSharedView = false, onDownload }: 
     else return (bytes / 1048576).toFixed(2) + " MB"
   }
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString()
+  function formatDate(dateString: string | undefined): string {
+    const date = new Date(dateString || "")
+    const day = String(date.getDate()).padStart(2, "0")
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const year = date.getFullYear()
+    const hours = String(date.getHours()).padStart(2, "0")
+    const minutes = String(date.getMinutes()).padStart(2, "0")
+  
+    return `${day}/${month}/${year} ${hours}:${minutes}`
   }
 
   return (
@@ -116,11 +129,11 @@ export default function ImageGrid({ images, isSharedView = false, onDownload }: 
           >
             <div className="w-[200px] h-5 bg-indigo-500/70 absolute z-[999] top-1 rounded-full" />
             <div className="aspect-square w-full relative"
-              onMouseEnter={() => handleMouseEnter(image.dataUrl)}
+              onMouseEnter={() => handleMouseEnter(image.storage_url)}
               onMouseLeave={handleMouseLeave}
             >
               <Image
-                src={image.dataUrl || "/placeholder.svg"}
+                src={image.storage_url || "/placeholder.svg"}
                 alt={image.name}
                 fill
                 className={`object-cover`}
@@ -135,7 +148,7 @@ export default function ImageGrid({ images, isSharedView = false, onDownload }: 
 
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>{formatFileSize(image.size)}</span>
-                  <span>{formatDate(image.uploadedAt)}</span>
+                  <span>{formatDate(image.created_at)}</span>
                 </div>
 
                 {image.categories && image.categories.length > 0 && (

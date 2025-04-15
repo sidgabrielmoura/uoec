@@ -1267,7 +1267,7 @@
 }
 
 /* Animation for Pulse Effect */
-@keyframes pulse {
+@keyframes pulse-share {
   0% {
     box-shadow: 0 0 0 0 rgba(110, 142, 251, 0.4);
   }
@@ -1280,7 +1280,7 @@
 }
 
 .button-content {
-  animation: pulse 3s infinite;
+  animation: pulse-share 3s infinite;
 }
 
 /* Hover Ripple Effect */
@@ -1444,4 +1444,65 @@
 
 .tooltip-content::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+.btn-clear {
+  background-color: transparent;
+  position: relative;
+  border: none;
+}
+
+.btn-clear::after {
+  content: 'clear gallery';
+  position: absolute;
+  top: -130%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: fit-content;
+  height: fit-content;
+  background-color: rgb(168, 7, 7);
+  padding: 4px 8px;
+  border-radius: 5px;
+  transition: .2s linear;
+  transition-delay: .2s;
+  color: white;
+  text-transform: uppercase;
+  font-size: 12px;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.icon {
+  transform: scale(1.2);
+  transition: .2s linear;
+}
+
+.btn-clear:hover > .icon {
+  transform: scale(1.5);
+}
+
+.btn-clear:hover > .icon path {
+  fill: rgb(168, 7, 7);
+}
+
+.btn-clear:hover::after {
+  visibility: visible;
+  opacity: 1;
+  top: -220%;
+}
+
+.pulse{
+  animation: pulse 2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
 }

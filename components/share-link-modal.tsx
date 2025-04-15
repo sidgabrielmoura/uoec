@@ -15,11 +15,16 @@ interface ShareLinkModalProps {
 export default function ShareLinkModal({ isOpen, onClose, shareLink }: ShareLinkModalProps) {
   const [copied, setCopied] = useState(false)
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (shareLink) {
-      navigator.clipboard.writeText(shareLink)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      try {
+        await navigator.clipboard.writeText(shareLink)
+  
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch (error) {
+        console.error("Erro ao copiar para a área de transferência:", error)
+      }
     }
   }
 

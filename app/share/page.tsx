@@ -13,9 +13,9 @@ export default function SharePage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const loadLinks = () => {
+    const loadLinks = async () => {
       try {
-        const links = getSharedLinks()
+        const links = await getSharedLinks()
         setSharedLinks(links)
       } catch (error) {
         console.error("Failed to load shared links:", error)
@@ -23,7 +23,7 @@ export default function SharePage() {
         setIsLoading(false)
       }
     }
-
+  
     loadLinks()
   }, [])
 

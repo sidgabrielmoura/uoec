@@ -27,12 +27,13 @@ export default function SharedLinkPage() {
   }
 
   useEffect(() => {
-    const loadSharedLink = () => {
+    const loadSharedLink = async () => {
       try {
-        const link = getSharedLinkByUuid(uuid)
-        if (link) {
-          setSharedLink(link)
-          setImages(link.images)
+        const response = await getSharedLinkByUuid(uuid)
+  
+        if (response.success && response.data) {
+          setSharedLink(response.data)
+          setImages(response.data.images)
         } else {
           setError("Shared link not found or has expired")
         }
@@ -43,13 +44,13 @@ export default function SharedLinkPage() {
         setIsLoading(false)
       }
     }
-
+  
     loadSharedLink()
   }, [uuid])
 
   const downloadSelectedImage = (image: StoredImage) => {
     const link = document.createElement("a")
-    link.href = image.dataUrl
+    link.href = image.storage_url
     link.download = image.name
     document.body.appendChild(link)
     link.click()
@@ -59,7 +60,7 @@ export default function SharedLinkPage() {
   const downloadImagesAsZip = async (images: StoredImage[]) => {
     if(images.length === 1){
       const link = document.createElement("a")
-      link.href = images[0].dataUrl
+      link.href = images[0].storage_url
       link.download = images[0].name
       document.body.appendChild(link)
       link.click()
@@ -69,7 +70,7 @@ export default function SharedLinkPage() {
     const zip = new JSZip()
 
     images.forEach((image) => {
-      const base64 = image.dataUrl.split(",")[1]
+      const base64 = image.storage_url.split(",")[1]
       zip.file(image.name, base64, {base64: true})
     })
 

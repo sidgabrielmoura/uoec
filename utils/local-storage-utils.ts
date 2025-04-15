@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from "uuid"
 import type { StoredImage } from "@/types/image"
 import type { SharedLink } from "@/types/share"
+import { supabase } from "@/lib/supabase-client"
 
-// Constants
 const IMAGES_STORAGE_KEY = "meg-uploader-images"
 const SHARED_LINKS_STORAGE_KEY = "meg-uploader-shared-links"
 const DEFAULT_EXPIRATION_DAYS = 7
@@ -23,7 +23,7 @@ export const saveImage = async (file: File): Promise<{ success: boolean; error?:
       name: file.name,
       size: file.size,
       type: file.type,
-      dataUrl,
+      storage_url: dataUrl,
       uploadedAt: Date.now(),
       categories: [],
     }
@@ -111,76 +111,72 @@ export const deleteImage = (id: string): boolean => {
 }
 
 // Shared link functions
-export const createSharedLink = (images: StoredImage[]): SharedLink => {
+export const createSharedLink = async (images: StoredImage[]) => {
   try {
     const uuid = uuidv4()
-    const createdAt = Date.now()
-    const expiresAt = createdAt + DEFAULT_EXPIRATION_DAYS * 24 * 60 * 60 * 1000
+    const createdAt = new Date().toISOString()
+    const expiresAt = new Date(Date.now() + DEFAULT_EXPIRATION_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
-    const sharedLink: SharedLink = {
-      uuid,
-      images,
-      createdAt,
-      expiresAt,
-    }
+    const { data, error } = await supabase
+      .from("shared_links")
+      .insert([{ uuid, images, created_at: createdAt, expires_at: expiresAt }])
+      .select()
 
-    const sharedLinks = getSharedLinks()
-    sharedLinks.push(sharedLink)
+    if (error) throw error
 
-    const localStorage = getLocalStorage()
-    if (localStorage) {
-      localStorage.setItem(SHARED_LINKS_STORAGE_KEY, JSON.stringify(sharedLinks))
-    }
-
-    return sharedLink
+    return data?.[0]
   } catch (error) {
-    console.error("Error creating shared link:", error)
-    throw new Error("Failed to create shared link")
+    console.error("Erro ao criar link compartilhado:", error)
+    throw new Error("Falha ao criar link compartilhado")
   }
 }
 
-export const getSharedLinks = (): SharedLink[] => {
-  const localStorage = getLocalStorage()
-  if (!localStorage) return []
-
+export const getSharedLinks = async (): Promise<SharedLink[]> => {
   try {
-    const linksJson = localStorage.getItem(SHARED_LINKS_STORAGE_KEY)
-    const links = linksJson ? JSON.parse(linksJson) : []
+    const { data, error } = await supabase
+      .from("shared_links")
+      .select("*")
 
-    // Filter out expired links
-    const now = Date.now()
-    return links.filter((link: SharedLink) => link.expiresAt > now)
+    if (error) throw error
+    return data || []
   } catch (error) {
-    console.error("Error getting shared links:", error)
+    console.error("Erro ao buscar links compartilhados:", error)
     return []
   }
 }
 
-export const getSharedLinkByUuid = (uuid: string): SharedLink | null => {
-  const links = getSharedLinks()
-  return links.find((link) => link.uuid === uuid) || null
+export async function getSharedLinkByUuid(uuid: string): Promise<{ success: boolean; data?: SharedLink; error?: any }> {
+  const { data, error } = await supabase
+    .from("shared_links")
+    .select("*")
+    .eq("uuid", uuid)
+    .single()
+
+  if (error) {
+    console.error("Erro ao buscar shared link:", error)
+    return { success: false, error }
+  }
+
+  return { success: true, data }
 }
 
-export const deleteSharedLink = (uuid: string): boolean => {
+export const deleteSharedLink = async (uuid: string): Promise<boolean> => {
   try {
-    const links = getSharedLinks()
-    const filteredLinks = links.filter((link) => link.uuid !== uuid)
+    const { error } = await supabase
+      .from("shared_links")
+      .delete()
+      .eq("uuid", uuid)
 
-    const localStorage = getLocalStorage()
-    if (localStorage) {
-      localStorage.setItem(SHARED_LINKS_STORAGE_KEY, JSON.stringify(filteredLinks))
-      return true
-    }
-
-    return false
+    if (error) throw error
+    return true
   } catch (error) {
-    console.error("Error deleting shared link:", error)
+    console.error("Erro ao deletar link:", error)
     return false
   }
 }
 
 // Helper functions
-const fileToDataUrl = (file: File): Promise<string> => {
+export const fileToDataUrl = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(reader.result as string)
