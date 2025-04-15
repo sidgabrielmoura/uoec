@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import LoginModal from "@/components/login-modal"
+import { createClient } from "@supabase/supabase-js"
 
 export default function GalleryPage() {
   const [images, setImages] = useState<StoredImage[]>([])
@@ -23,6 +24,11 @@ export default function GalleryPage() {
     used: "0.00",
     total: "10.00",
     isNearLimit: false
+  })
+  const [sizeMemoryDb, setSizeMemoryDb] = useState({
+    used: "0.00",
+    total: "10.00",
+    isNearLimit: false,
   })
   const [selectedImage, setSelectedImage] = useState<StoredImage[] | null>(null)
   const [shareLink, setShareLink] = useState<string | null>(null)
@@ -55,9 +61,10 @@ export default function GalleryPage() {
 
     loadImages()
     getLocalStorageUsage()
+    getDatabaseUsage()
   }, [])
 
-  function getLocalStorageUsage(type: "local" | "db" = "local") {
+  function getLocalStorageUsage() {
     let total = 0
 
     for (let key in localStorage) {
@@ -68,7 +75,7 @@ export default function GalleryPage() {
     }
 
     const usedMB = ((total * 2) / 1024) / 1000
-    const totalMB = type === "local" ? 10 : 1000
+    const totalMB = 10
     const remainingMB = totalMB - usedMB
     const isNearLimit = remainingMB < 1
 
@@ -77,6 +84,42 @@ export default function GalleryPage() {
       total: totalMB.toFixed(2),
       isNearLimit
     })
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+  async function getDatabaseUsage() {
+    try {
+      // Supondo que você tenha uma tabela chamada "images"
+      const { data, error } = await supabase
+        .from('imagens')
+        .select('id, created_at, size') // Exemplo: Adicionando um campo "file_size" que representa o tamanho do arquivo
+
+      if (error) {
+        console.error("Erro ao buscar dados:", error)
+        return
+      }
+
+      // Supondo que o tamanho do arquivo esteja armazenado em um campo "file_size" (em bytes)
+      const totalUsedBytes = data.reduce((acc, image) => acc + (image.size || 0), 0)
+
+      const usedMB = totalUsedBytes / (1024 * 1024)
+      const totalMB = 8000 // 8 GB
+      const remainingMB = totalMB - usedMB
+      const isNearLimit = remainingMB < 1
+
+      setSizeMemoryDb({
+        used: usedMB.toFixed(2),
+        total: totalMB.toFixed(2),
+        isNearLimit,
+      })
+
+      console.log("Uso do banco de dados:", { usedMB, totalMB, isNearLimit })
+    } catch (error) {
+      console.error("Erro ao calcular o uso do banco:", error)
+    }
   }
 
   const handleShare = async (image: StoredImage[]) => {
@@ -259,7 +302,7 @@ export default function GalleryPage() {
                   <h1 className="ml-1 text-zinc-400 flex gap-2">
                     espaço db:
                     <span className={sizeMemory.isNearLimit ? "text-red-500 font-semibold" : ""}>
-                      {sizeMemory.used} MB / {sizeMemory.total} MB
+                      {sizeMemoryDb.used} MB / {sizeMemoryDb.total} MB
                     </span>
                   </h1>
                 </div>

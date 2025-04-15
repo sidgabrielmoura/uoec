@@ -16,6 +16,7 @@ export default function SharePage() {
     const loadLinks = async () => {
       try {
         const links = await getSharedLinks()
+        console.log("Loaded shared links:", links)
         setSharedLinks(links)
       } catch (error) {
         console.error("Failed to load shared links:", error)
@@ -27,6 +28,19 @@ export default function SharePage() {
     loadLinks()
   }, [])
 
+  const formatDate = (isoDate: string) => {
+    const date = new Date(isoDate)
+    const formatted = date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+
+    return formatted
+  }
+
   const handleDelete = (uuid: string) => {
     try {
       deleteSharedLink(uuid)
@@ -34,10 +48,6 @@ export default function SharePage() {
     } catch (error) {
       console.error("Failed to delete shared link:", error)
     }
-  }
-
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString()
   }
 
   const [loading, setLoading] = useState(false)
@@ -98,8 +108,8 @@ export default function SharePage() {
                           {`${typeof window !== 'undefined' ? window.location.origin : ''}/share/${link.uuid}`}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">{formatDate(link.createdAt)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{formatDate(link.expiresAt)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{formatDate(link.created_at)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{formatDate(link.expires_at)}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Button
                           variant="ghost"
