@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -8,197 +8,206 @@ import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import Cropper from "react-easy-crop"
+import NextImage from "next/image"
 import * as SliderPrimitive from "@radix-ui/react-slider"
 import type { Point, Area } from "react-easy-crop"
 import { getCroppedImg } from "@/utils/crop-utils"
 import type { StoredImage } from "@/types/image"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+import { CheckCircle, SaveAll, Undo2 } from "lucide-react"
+import { saveImageToSupabase } from "@/utils/supabase"
+import Link from "next/link"
 
 interface ImageEditorProps {
   image: StoredImage
-  onSave: (editedImage: StoredImage) => void
+  onSave?: (editedImage: StoredImage) => void
 }
 
 export default function ImageEditor({ image, onSave }: ImageEditorProps) {
-  const searchParams = useSearchParams()
-  const initialMode = searchParams.get("mode") === "crop" ? "crop" : "edit"
-
-  const [mode, setMode] = useState<any>(initialMode)
-  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 })
-  const [zoom, setZoom] = useState(1)
-  const [rotation, setRotation] = useState(0)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
   const [columns, setColumns] = useState(2)
   const [isSaving, setIsSaving] = useState(false)
-
-  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
-    setCroppedAreaPixels(croppedAreaPixels)
-  }, [])
-
-  const handleSave = async () => {
-    if (!croppedAreaPixels) return
-
-    try {
-      setIsSaving(true)
-
-      const croppedImage = await getCroppedImg(image.dataUrl, croppedAreaPixels, rotation)
-
-      if (croppedImage) {
-        const editedImage: StoredImage = {
-          ...image,
-          dataUrl: croppedImage,
-          editedAt: Date.now(),
-        }
-
-        onSave(editedImage)
-      }
-    } catch (e) {
-      console.error("Failed to crop image:", e)
-    } finally {
-      setIsSaving(false)
-    }
-  }
+  const [imageParts, setImageParts] = useState<string[]>([])
+  const [email, setEmail] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const handleColumnCrop = async () => {
     try {
       setIsSaving(true)
-      const editedImage: StoredImage = {
-        ...image,
-        editedAt: Date.now(),
-      }
 
-      onSave(editedImage)
+      const img = new window.Image()
+      img.src = image.storage_url
+      img.onload = async () => {
+        const canvas = document.createElement("canvas")
+        const ctx = canvas.getContext("2d")
+
+        if (!ctx) {
+          console.error("Canvas context não encontrado")
+          return
+        }
+
+        const partWidth = img.width / columns
+        const partHeight = img.height
+
+        const parts: string[] = []
+
+        for (let i = 0; i < columns; i++) {
+          canvas.width = partWidth
+          canvas.height = partHeight
+
+          ctx.clearRect(0, 0, partWidth, partHeight)
+          ctx.drawImage(img, -i * partWidth, 0, img.width, img.height)
+
+          const partDataUrl = canvas.toDataURL("image/png")
+          parts.push(partDataUrl)
+        }
+
+        setImageParts(parts)
+      }
     } catch (e) {
-      console.error("Failed to crop image by columns:", e)
+      console.error("Falha ao dividir a imagem:", e)
     } finally {
       setIsSaving(false)
     }
   }
 
+  const handleSaveImageCropped = async () => {
+    setIsSaving(true)
+    const files = imageParts.map((part, index) => {
+      const byteString = atob(part.split(",")[1]);
+      const mimeString = part.split(",")[0].split(":")[1].split(";")[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      return new File([ab], `part-${index + 1}.png`, { type: mimeString });
+    });
+
+    for (const file of files) {
+      await saveImageToSupabase(file, email || "");
+      setSuccess("Imagem Dividida com sucesso!")
+      setTimeout(() => {
+        setIsSaving(false)
+      }, 1000);
+    }
+  }
+
+  const handleColumnsChange = (value: string) => {
+    setColumns(Number.parseInt(value))
+  }
+
+  useEffect(() => {
+    const storedEmail = localStorage.getItem("userEmail")
+    if (storedEmail) {
+      setEmail(storedEmail)
+    }
+  }, [])
+
+  const columnOptions = Array.from({ length: 5 }, (_, i) => i + 1)
+
   return (
-    <div className="space-y-6">
-      <Tabs value={mode} onValueChange={setMode} className="w-full">
-        <TabsList className="grid grid-cols-2 gap-2">
-          <TabsTrigger value="edit" className={mode === "edit" ? "!bg-indigo-500 text-white rounded-lg" : "text-gray-50 rounded-lg"}>Edição Básica</TabsTrigger>
-          <TabsTrigger value="crop" className={mode === "crop" ? "!bg-indigo-500 text-white rounded-lg" : "text-gray-50 rounded-lg"}>Recorte</TabsTrigger>
-        </TabsList>
+    <main className="flex flex-col items-center p-4">
+      <div className="w-full mb-6">
+        <Select value={columns.toString()} onValueChange={handleColumnsChange}>
+          <SelectTrigger id="columns-select" className="w-full border-indigo-500 bg-indigo-500">
+            <SelectValue placeholder="Select number of columns" />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-800 border-zinc-600">
+            {columnOptions.map((option) => (
+              <SelectItem key={option} value={option.toString()} className="hover:bg-indigo-600 w-full">
+                {option} {option === 1 ? "coluna" : "colunas"}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-        {/* Edição Básica */}
-        <TabsContent value="edit" className="space-y-6">
-          <div className="aspect-square relative bg-gray-100 rounded-xl overflow-hidden shadow-md">
-            <img
-              src={image.dataUrl || "/placeholder.svg"}
-              alt={image.name}
-              className="w-full h-full object-contain transition-transform duration-300"
-              style={{ transform: `rotate(${rotation}deg)` }}
-            />
-          </div>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Rotação</Label>
-              <SliderPrimitive.Root
-                value={[rotation]}
-                min={0}
-                max={180}
-                step={1}
-                onValueChange={(values) => setRotation(values[0])}
-                className="relative flex w-full touch-none select-none items-center"
-              >
-                <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-gray-300">
-                  <SliderPrimitive.Range className="absolute h-full bg-purple-500" />
-                </SliderPrimitive.Track>
-                <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-white bg-purple-500 shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </SliderPrimitive.Root>
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>0°</span>
-                <span>90°</span>
-                <span>180°</span>
+      <div className="relative w-full">
+        {imageParts.length === 0 ? (
+          <NextImage
+            src={image.storage_url || "/placeholder.svg"}
+            alt="Imagem original"
+            width={800}
+            height={600}
+            className="w-full h-auto"
+            priority
+          />
+        ) : (
+          <>
+            {imageParts.length > 0 && (
+              <div className="flex gap-4 w-full justify-center flex-1">
+                {imageParts.map((part, index) => (
+                  <div key={index} className="border border-gray-300 rounded-md overflow-hidden">
+                    <img src={part} alt={`Parte ${index + 1}`} className="w-full h-auto" />
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
+          </>
+        )}
 
-            <Button onClick={handleSave} disabled={isSaving} className="w-full bg-indigo-500 hover:bg-indigo-500">
-              {isSaving ? "Salvando..." : "Salvar Alterações"}
-            </Button>
+      </div>
+
+      <div className="mt-6 text-sm text-gray-500">
+        <p>
+          A foto será dividida em {columns} {columns === 1 ? "coluna igual" : "colunas iguais"}
+        </p>
+      </div>
+
+      <div className="flex gap-1 w-full">
+        <Button
+          variant="default"
+          className="mt-4 rounded-xl bg-indigo-500 hover:bg-indigo-600 w-full"
+          onClick={handleColumnCrop}
+          disabled={isSaving}
+        >
+          Dividir Imagem
+        </Button>
+
+        <Button
+          className="group relative mt-4 bg-indigo-500 hover:bg-indigo-600 rounded-xl cursor-pointer"
+          onClick={() => setImageParts([])}
+          disabled={isSaving}
+        >
+          <Undo2 className="size-5"/>
+          <span className="absolute -top-14 left-[50%] -translate-x-[50%]
+          z-20 origin-left scale-0 px-3 border border-zinc-600 py-2 text-sm font-bold
+          shadow-md transition-all duration-300 ease-in-out 
+          group-hover:scale-100 rounded-full bg-indigo-500 hover:bg-indigo-600">
+            Desfazer
+          </span>
+        </Button>
+
+        <Button
+          className="group relative mt-4 bg-indigo-500 hover:bg-indigo-600 rounded-xl cursor-pointer"
+          onClick={handleSaveImageCropped}
+          disabled={isSaving}
+        >
+          <SaveAll className="size-5"/>
+          <span className="absolute -top-14 left-[50%] -translate-x-[50%]
+          z-20 origin-left scale-0 px-3 border border-zinc-600 py-2 text-sm font-bold
+          shadow-md transition-all duration-300 ease-in-out text-nowrap
+          group-hover:scale-100 rounded-full bg-indigo-500 hover:bg-indigo-600">
+            Salvar na galeria
+          </span>
+        </Button>
+      </div>
+
+      {success && (
+        <div className="mt-6 p-4 border border-green-500 bg-green-950 text-green-400 rounded-lg shadow-sm w-full flex flex-col items-center">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5" />
+            <span>{success}</span>
           </div>
-        </TabsContent>
-
-        {/* Recorte */}
-        <TabsContent value="crop" className="space-y-6">
-          <div className="aspect-square relative bg-gray-100 rounded-xl overflow-hidden shadow-md">
-            <Cropper
-              image={image.dataUrl}
-              crop={crop}
-              zoom={zoom}
-              rotation={rotation}
-              aspect={1}
-              onCropChange={setCrop}
-              onZoomChange={setZoom}
-              onRotationChange={setRotation}
-              onCropComplete={onCropComplete}
-            />
+          <div className="mt-3">
+            <Link href="/gallery">
+              <Button variant="secondary" size="sm">
+                Ver na galeria
+              </Button>
+            </Link>
           </div>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Zoom</Label>
-              <SliderPrimitive.Root
-                value={[zoom]}
-                min={1}
-                max={3}
-                step={0.1}
-                onValueChange={(values) => setZoom(values[0])}
-                className="relative flex w-full touch-none select-none items-center"
-              >
-                <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-gray-300">
-                  <SliderPrimitive.Range className="absolute h-full bg-purple-500" />
-                </SliderPrimitive.Track>
-                <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-white bg-purple-500 shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </SliderPrimitive.Root>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Rotação</Label>
-              <SliderPrimitive.Root
-                value={[rotation]}
-                min={0}
-                max={180}
-                step={1}
-                onValueChange={(values) => setRotation(values[0])}
-                className="relative flex w-full touch-none select-none items-center"
-              >
-                <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-gray-300">
-                  <SliderPrimitive.Range className="absolute h-full bg-purple-500" />
-                </SliderPrimitive.Track>
-                <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-white bg-purple-500 shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </SliderPrimitive.Root>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Dividir por colunas</Label>
-              <div className="flex items-center space-x-3">
-                <Input
-                  type="number"
-                  min={2}
-                  max={10}
-                  value={columns}
-                  onChange={(e) =>
-                    setColumns(Number.parseInt(e.target.value) || 2)
-                  }
-                  className="w-24"
-                />
-                <Button variant="outline" onClick={handleColumnCrop} disabled={isSaving}>
-                  Dividir Imagem
-                </Button>
-              </div>
-            </div>
-
-            <Button onClick={handleSave} disabled={isSaving} className="w-full bg-indigo-500 hover:bg-indigo-500">
-              {isSaving ? "Salvando..." : "Salvar Imagem Recortada"}
-            </Button>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-
+        </div>
+      )}
+    </main>
   )
 }

@@ -4,10 +4,11 @@ import { useEffect, useState, use } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, CheckCircle } from "lucide-react"
 import ImageEditor from "@/components/image-editor"
 import { getImageById, updateImage } from "@/utils/local-storage-utils"
 import type { StoredImage } from "@/types/image"
+import { getImageByIdFromSupabase, updateImageInSupabase } from "@/utils/supabase"
 
 export default function EditorPage() {
   const router = useRouter()
@@ -17,11 +18,18 @@ export default function EditorPage() {
   const [image, setImage] = useState<StoredImage | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   useEffect(() => {
-    const loadImage = () => {
+    console.log("ID recebido:", id)
+    if (!id) return
+    const token = localStorage.getItem('userEmail')
+    console.log("Token localStorage:", token)
+    console.log("ID recebido:", id)
+  
+    const loadImage = async () => {
       try {
-        const foundImage = getImageById(id)
+        const foundImage: any = await getImageByIdFromSupabase(id)
         if (foundImage) {
           setImage(foundImage)
         } else {
@@ -34,13 +42,13 @@ export default function EditorPage() {
         setIsLoading(false)
       }
     }
-
+  
     loadImage()
   }, [id])
 
   const handleSave = async (editedImage: StoredImage) => {
     try {
-      await updateImage(editedImage)
+      await updateImageInSupabase(editedImage)
       router.push("/gallery")
     } catch (e) {
       console.error("falha ao salvar imagem editada:", e)
@@ -80,8 +88,24 @@ export default function EditorPage() {
 
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Editar imagem</h1>
-        <ImageEditor image={image} onSave={handleSave} />
+        <ImageEditor image={image} />
       </div>
+
+      {success && (
+        <div className="mt-6 p-4 border border-green-500 bg-green-950 text-green-400 rounded-lg shadow-sm">
+          <div className="flex items-center justify-center gap-2">
+            <CheckCircle className="h-5 w-5" />
+            <span>{success}</span>
+          </div>
+          <div className="mt-3">
+            <Link href="/gallery">
+              <Button variant="secondary" size="sm">
+                Ver na galeria
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

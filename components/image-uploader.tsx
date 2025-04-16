@@ -5,6 +5,8 @@ import { useDropzone } from "react-dropzone"
 import { Button } from "@/components/ui/button"
 import { Upload, X } from "lucide-react"
 import Image from "next/image"
+import { Input } from "./ui/input"
+import ImageHighUpload from "./image-high-upload"
 
 interface ImageUploaderProps {
   onUpload: (files: File[]) => void
@@ -148,8 +150,8 @@ export default function ImageUploader({ onUpload, isUploading }: ImageUploaderPr
           <div className="flex justify-end">
             <Button onClick={handleUpload} disabled={isUploading} className="bg-indigo-500 hover:bg-indigo-500">
               {isUploading
-                ? "Uploading..."
-                : `Upload ${previewFiles.length} ${previewFiles.length === 1 ? "Imagem" : "Imagens"}`}
+                ? "carregando..."
+                : `Carregar ${previewFiles.length} ${previewFiles.length === 1 ? "Imagem" : "Imagens"}`}
             </Button>
           </div>
         </div>

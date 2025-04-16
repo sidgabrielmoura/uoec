@@ -7,12 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Edit, Crop, Share2, Download, MoreVertical, Trash2 } from "lucide-react"
-import { deleteImage, createSharedLink } from "@/utils/local-storage-utils"
 import ShareLinkModal from "@/components/share-link-modal"
 import type { StoredImage } from "@/types/image"
 import { motion, AnimatePresence } from "framer-motion"
-import { deleteImageFromSupabase, getImagesFromSupabase } from "@/utils/supabase"
-import { toast } from "sonner"
+import { createSharedLink } from "@/utils/supabase"
 
 interface ImageGridProps {
   images: StoredImage[]
@@ -50,11 +48,11 @@ export default function ImageGrid({ images, isSharedView = false, onDownload, on
     }
   }
 
-  const handleShare = (image: StoredImage) => {
+  const handleShare = async (image: StoredImage) => {
     setSelectedImage(image)
-
+  
     try {
-      const link = createSharedLink([image])
+      const link = await createSharedLink([image])
       const fullUrl = `${window.location.origin}/share/${link.uuid}`
       setShareLink(fullUrl)
       setIsShareModalOpen(true)
@@ -183,11 +181,6 @@ export default function ImageGrid({ images, isSharedView = false, onDownload, on
                     <Link href={`/editor/${image.id}`}>
                       <Button variant="outline" size="icon" className="hover:bg-white/10 transition border-zinc-600">
                         <Edit className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Link href={`/editor/${image.id}?mode=crop`}>
-                      <Button variant="outline" size="icon" className="hover:bg-white/10 transition border-zinc-600">
-                        <Crop className="h-4 w-4" />
                       </Button>
                     </Link>
                     <Button

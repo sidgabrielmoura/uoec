@@ -9,6 +9,7 @@ import { saveImage } from "@/utils/local-storage-utils"
 import { redirect } from "next/navigation"
 import { saveImageToSupabase } from "@/utils/supabase"
 import LoginModal from "@/components/login-modal"
+import ImageHighUpload from "@/components/image-high-upload"
 
 export default function UploadPage() {
   const [isUploading, setIsUploading] = useState(false)
@@ -124,6 +125,7 @@ export default function UploadPage() {
               </p>
 
               <ImageUploader onUpload={handleImageUpload} isUploading={isUploading} />
+              <ImageHighUpload onUpload={handleImageUpload} isUploading={isUploading}/>
 
               {uploadSuccess && (
                 <div className="mt-6 p-4 border border-green-500 bg-green-950 text-green-400 rounded-lg shadow-sm">
