@@ -57,7 +57,7 @@ export const updateImageWithAIClassification = async (image: StoredImage): Promi
     return {
       ...image,
       categories,
-      classifiedAt: Date.now(),
+      classified_at: Date.now(),
     }
   } catch (error) {
     console.error("Error classifying image:", error)

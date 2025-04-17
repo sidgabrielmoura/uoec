@@ -5,12 +5,11 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Loader, Loader2Icon, LogIn, LogOut, Menu, Share2, Trash, Upload } from "lucide-react"
 import ImageGrid from "@/components/image-grid"
-import { createSharedLink, getImages } from "@/utils/local-storage-utils"
 import type { StoredImage } from "@/types/image"
 import "../globals.css"
 import { redirect } from "next/navigation"
 import ShareLinkModal from "@/components/share-link-modal"
-import { clearSupabaseImages, deleteImageFromSupabase, getImagesFromSupabase, logout } from "@/utils/supabase"
+import { clearSupabaseImages, createSharedLink, deleteImageFromSupabase, getImagesFromSupabase, logout } from "@/utils/supabase"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -20,16 +19,6 @@ import { createClient } from "@supabase/supabase-js"
 export default function GalleryPage() {
   const [images, setImages] = useState<StoredImage[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [sizeMemory, setSizeMemory] = useState({
-    used: "0.00",
-    total: "10.00",
-    isNearLimit: false
-  })
-  const [sizeMemoryDb, setSizeMemoryDb] = useState({
-    used: "0.00",
-    total: "10.00",
-    isNearLimit: false,
-  })
   const [selectedImage, setSelectedImage] = useState<StoredImage[] | null>(null)
   const [shareLink, setShareLink] = useState<string | null>(null)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
@@ -60,67 +49,7 @@ export default function GalleryPage() {
     }
 
     loadImages()
-    getLocalStorageUsage()
-    getDatabaseUsage()
   }, [])
-
-  function getLocalStorageUsage() {
-    let total = 0
-
-    for (let key in localStorage) {
-      if (localStorage.hasOwnProperty(key)) {
-        const value = localStorage.getItem(key)
-        total += key.length + (value?.length || 0)
-      }
-    }
-
-    const usedMB = ((total * 2) / 1024) / 1000
-    const totalMB = 10
-    const remainingMB = totalMB - usedMB
-    const isNearLimit = remainingMB < 1
-
-    setSizeMemory({
-      used: usedMB.toFixed(2),
-      total: totalMB.toFixed(2),
-      isNearLimit
-    })
-  }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-  async function getDatabaseUsage() {
-    try {
-      // Supondo que você tenha uma tabela chamada "images"
-      const { data, error } = await supabase
-        .from('imagens')
-        .select('id, created_at, size') // Exemplo: Adicionando um campo "file_size" que representa o tamanho do arquivo
-
-      if (error) {
-        console.error("Erro ao buscar dados:", error)
-        return
-      }
-
-      // Supondo que o tamanho do arquivo esteja armazenado em um campo "file_size" (em bytes)
-      const totalUsedBytes = data.reduce((acc, image) => acc + (image.size || 0), 0)
-
-      const usedMB = totalUsedBytes / (1024 * 1024)
-      const totalMB = 8000 // 8 GB
-      const remainingMB = totalMB - usedMB
-      const isNearLimit = remainingMB < 1
-
-      setSizeMemoryDb({
-        used: usedMB.toFixed(2),
-        total: totalMB.toFixed(2),
-        isNearLimit,
-      })
-
-      console.log("Uso do banco de dados:", { usedMB, totalMB, isNearLimit })
-    } catch (error) {
-      console.error("Erro ao calcular o uso do banco:", error)
-    }
-  }
 
   const handleShare = async (image: StoredImage[]) => {
     setSelectedImage(image)
@@ -214,6 +143,7 @@ export default function GalleryPage() {
                     </Button>
 
                     <Button
+                      disabled={images.length === 0}
                       onClick={() => handleShare([...images])}
                       className="w-full justify-start gap-2 bg-blue-700 hover:bg-blue-800"
                     >
@@ -242,7 +172,7 @@ export default function GalleryPage() {
                 )}
 
                 {userEmail && (
-                  <button disabled={!userEmail} className={`${userEmail ? 'tooltip-container' : ''} disabled:opacity-50`} onClick={() => handleShare([...images])}>
+                  <button disabled={!userEmail || images.length === 0} className={`${userEmail ? 'tooltip-container' : ''} disabled:opacity-50`} onClick={() => handleShare([...images])}>
                     <div className="button-content">
                       <span className="text">Compartilhar</span>
                       <svg
@@ -292,20 +222,6 @@ export default function GalleryPage() {
             <div>
               <div className="flex flex-col -space-y-6 mb-8">
                 <h1 className="text-3xl font-bold mb-6">Galeria de imagens</h1>
-                <div className="flex max-sm:flex-col sm:gap-4">
-                  <h1 className="ml-1 text-zinc-400 flex gap-2">
-                    espaço local:
-                    <span className={sizeMemory.isNearLimit ? "text-red-500 font-semibold" : ""}>
-                      {sizeMemory.used} MB / {sizeMemory.total} MB
-                    </span>
-                  </h1>
-                  <h1 className="ml-1 text-zinc-400 flex gap-2">
-                    espaço db:
-                    <span className={sizeMemory.isNearLimit ? "text-red-500 font-semibold" : ""}>
-                      {sizeMemoryDb.used} MB / {sizeMemoryDb.total} MB
-                    </span>
-                  </h1>
-                </div>
               </div>
 
               {isLoading ? (

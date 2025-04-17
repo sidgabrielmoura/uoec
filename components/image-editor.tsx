@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { CheckCircle, SaveAll, Undo2 } from "lucide-react"
 import { saveImageToSupabase } from "@/utils/supabase"
 import Link from "next/link"
+import { v4 as uuidv4 } from 'uuid'
 
 interface ImageEditorProps {
   image: StoredImage
@@ -71,26 +72,39 @@ export default function ImageEditor({ image, onSave }: ImageEditorProps) {
   }
 
   const handleSaveImageCropped = async () => {
-    setIsSaving(true)
-    const files = imageParts.map((part, index) => {
-      const byteString = atob(part.split(",")[1]);
-      const mimeString = part.split(",")[0].split(":")[1].split(";")[0];
-      const ab = new ArrayBuffer(byteString.length);
-      const ia = new Uint8Array(ab);
-      for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-      }
-      return new File([ab], `part-${index + 1}.png`, { type: mimeString });
-    });
+    const divide_id = uuidv4()
+    console.log("ID gerado:", divide_id)
 
-    for (const file of files) {
-      await saveImageToSupabase(file, email || "");
+    if(!divide_id) return
+
+    try {
+      setIsSaving(true)
+  
+      const files = imageParts.map((part, index) => {
+        const byteString = atob(part.split(",")[1])
+        const mimeString = part.split(",")[0].split(":")[1].split(";")[0]
+        const ab = new ArrayBuffer(byteString.length)
+        const ia = new Uint8Array(ab)
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i)
+        }
+        return new File([ab], `part-${index + 1}.png`, { type: mimeString })
+      })
+  
+      for (const file of files) {
+        await saveImageToSupabase(file, email || "", divide_id)
+      }
+  
       setSuccess("Imagem Dividida com sucesso!")
+    } catch (err) {
+      console.error("Erro ao salvar imagem dividida:", err)
+    } finally {
       setTimeout(() => {
         setIsSaving(false)
-      }, 1000);
+      }, 1000)
     }
   }
+  
 
   const handleColumnsChange = (value: string) => {
     setColumns(Number.parseInt(value))
@@ -180,6 +194,7 @@ export default function ImageEditor({ image, onSave }: ImageEditorProps) {
 
         <Button
           className="group relative mt-4 bg-indigo-500 hover:bg-indigo-600 rounded-xl cursor-pointer"
+          type="button"
           onClick={handleSaveImageCropped}
           disabled={isSaving}
         >

@@ -5,6 +5,7 @@ import { useDropzone } from "react-dropzone"
 import { Button } from "@/components/ui/button"
 import { Upload, X } from "lucide-react"
 import Image from "next/image"
+import '../app/globals.css'
 import { Input } from "./ui/input"
 import ImageHighUpload from "./image-high-upload"
 
@@ -48,7 +49,7 @@ export default function ImageUploader({ onUpload, isUploading }: ImageUploaderPr
           const ctx = canvas.getContext("2d")
           ctx?.drawImage(img, 0, 0, width, height)
 
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.98)
+          const dataUrl = canvas.toDataURL("image/png", 20000)
           resolve(dataUrl)
         }
 
@@ -147,8 +148,8 @@ export default function ImageUploader({ onUpload, isUploading }: ImageUploaderPr
             ))}
           </div>
 
-          <div className="flex justify-end">
-            <Button onClick={handleUpload} disabled={isUploading} className="bg-indigo-500 hover:bg-indigo-500">
+          <div className="flex justify-end w-full">
+            <Button onClick={handleUpload} disabled={isUploading} className="bg-indigo-500 hover:bg-indigo-500 w-full">
               {isUploading
                 ? "carregando..."
                 : `Carregar ${previewFiles.length} ${previewFiles.length === 1 ? "Imagem" : "Imagens"}`}
@@ -158,7 +159,7 @@ export default function ImageUploader({ onUpload, isUploading }: ImageUploaderPr
       ) : (
         <div className="w-full flex gap-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-zinc-600 w-full h-[150px] rounded-2xl" />
+            <div key={i} className="bg-zinc-600 w-full h-[150px] rounded-2xl animate-pulse" />
           ))}
         </div>
       )}

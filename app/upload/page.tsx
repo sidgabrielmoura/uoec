@@ -1,23 +1,23 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { AlertCircle, ArrowLeft, CheckCircle, Image } from "lucide-react"
 import ImageUploader from "@/components/image-uploader"
-import { saveImage } from "@/utils/local-storage-utils"
 import { redirect } from "next/navigation"
 import { saveImageToSupabase } from "@/utils/supabase"
 import LoginModal from "@/components/login-modal"
 import ImageHighUpload from "@/components/image-high-upload"
 
 export default function UploadPage() {
+  const [uploadedImages, setUploadedImages] = useState<{ file: File; highQuality: boolean }[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [findEmail, setFindEmail] = useState(false)
 
-  const handleImageUpload = async (filesOrEvent: File[] | Event) => {
+  const handleImageUpload = async (filesOrEvent: { file: File; highQuality?: boolean }[] | Event) => {
     setIsUploading(true)
     setUploadError(null)
     setUploadSuccess(null)
@@ -32,7 +32,7 @@ export default function UploadPage() {
           files = Array.from(input.files)
         }
       } else if (Array.isArray(filesOrEvent)) {
-        files = filesOrEvent
+        files = filesOrEvent.map((fileObj) => fileObj.file)
       } else {
         throw new Error("Parâmetro inválido recebido em handleImageUpload")
       }
@@ -57,10 +57,13 @@ export default function UploadPage() {
           setFindEmail(true)
           return
         }
+
+        const highQuality = filesOrEvent instanceof Event ? false : filesOrEvent[0].highQuality
   
-        const result = await saveImageToSupabase(file, email)
+        const result = await saveImageToSupabase(file, email, undefined, highQuality)
         if (result.success) {
           successCount++
+          setUploadedImages((prev) => [...prev, { file, highQuality: highQuality || false }])
         } else {
           setUploadError(result.error || "Falha ao carregar imagem")
           break
@@ -124,7 +127,10 @@ export default function UploadPage() {
                 Arraste e solte ou clique no campo abaixo para enviar suas imagens.
               </p>
 
-              <ImageUploader onUpload={handleImageUpload} isUploading={isUploading} />
+              <ImageUploader 
+                onUpload={(files: File[]) => handleImageUpload(files.map(file => ({ file })))} 
+                isUploading={isUploading} 
+              />
               <ImageHighUpload onUpload={handleImageUpload} isUploading={isUploading}/>
 
               {uploadSuccess && (

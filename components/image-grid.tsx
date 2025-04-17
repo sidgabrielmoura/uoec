@@ -11,6 +11,9 @@ import ShareLinkModal from "@/components/share-link-modal"
 import type { StoredImage } from "@/types/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { createSharedLink } from "@/utils/supabase"
+import GroupImagesModal from "./image-group-modal"
+import JSZip from "jszip"
+import saveAs from "file-saver"
 
 interface ImageGridProps {
   images: StoredImage[]
@@ -25,6 +28,10 @@ export default function ImageGrid({ images, isSharedView = false, onDownload, on
   const [shareLink, setShareLink] = useState<string | null>(null)
   const [showImg, setShowImg] = useState({ img: "", status: false })
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [groupImagesOpen, setGroupImagesOpen] = useState({
+    status: false,
+    images: [] as StoredImage[],
+  })
 
   const handleMouseEnter = (img: string) => {
     timeoutRef.current = setTimeout(() => {
@@ -54,8 +61,8 @@ export default function ImageGrid({ images, isSharedView = false, onDownload, on
     try {
       const link = await createSharedLink([image])
       const fullUrl = `${window.location.origin}/share/${link.uuid}`
-      setShareLink(fullUrl)
       setIsShareModalOpen(true)
+      setShareLink(fullUrl)
     } catch (error) {
       console.error("Failed to create shared link:", error)
     }
@@ -80,6 +87,27 @@ export default function ImageGrid({ images, isSharedView = false, onDownload, on
     else return (bytes / 1048576).toFixed(2) + " MB"
   }
 
+  const downloadImagesAsZip = async (images: StoredImage[]) => {
+      if(images.length === 1){
+      const link = document.createElement("a")
+      link.href = images[0].storage_url
+      link.download = images[0].name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      }
+
+      const zip = new JSZip()
+
+      images.forEach((image) => {
+      const base64 = image.storage_url.split(",")[1]
+      zip.file(image.name, base64, {base64: true})
+      })
+
+      const content = await zip.generateAsync({ type: "blob" })
+      saveAs(content, "U.O.E.C_images.zip")
+  }
+
   function formatDate(dateString: string | undefined): string {
     const date = new Date(dateString || "")
     const day = String(date.getDate()).padStart(2, "0")
@@ -91,9 +119,32 @@ export default function ImageGrid({ images, isSharedView = false, onDownload, on
     return `${day}/${month}/${year} ${hours}:${minutes}`
   }
 
+  const hasDividedImages = images.some((img) => img.divide_id)
+  const groupedByDivideId: Record<string, StoredImage[]> = {}
+  if (hasDividedImages) {
+    images.forEach((img) => {
+      if (img.divide_id) {
+        if (!groupedByDivideId[img.divide_id]) {
+          groupedByDivideId[img.divide_id] = []
+        }
+        groupedByDivideId[img.divide_id].push(img)
+      }
+    })
+  }
+
+  const groupedArrays = Object.values(groupedByDivideId)
+  console.log("Grouped arrays:", groupedArrays)
+
+  const openGroup = (images: StoredImage[]) => {
+    setGroupImagesOpen({
+      status: true,
+      images: images,
+    })
+  }
+
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 bg-zinc-700 rounded-3xl p-4">
         <AnimatePresence>
           {showImg.status && (
             <motion.div
@@ -120,10 +171,13 @@ export default function ImageGrid({ images, isSharedView = false, onDownload, on
             </motion.div>
           )}
         </AnimatePresence>
+
         {images.map((image) => (
+          image.divide_id && image.divide_id !== null ? null : // Skip images with divide_id
           <Card
             key={image.id}
-            className="overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm rounded-2xl hover:scale-[1.02] transition-transform duration-300 ease-in-out flex flex-col justify-center items-center"
+            className="overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm rounded-2xl hover:scale-[1.02] h-[450px]
+            transition-all duration-300 ease-in-out flex flex-col justify-center items-center shadow-lg shadow-black/40 hover:shadow-black/70"
           >
             <div className="w-[200px] h-5 bg-indigo-500/70 absolute z-[999] top-1 rounded-full" />
             <div className="aspect-square w-full relative"
@@ -215,8 +269,71 @@ export default function ImageGrid({ images, isSharedView = false, onDownload, on
             </CardFooter>
           </Card>
         ))}
+
+
+        {images.length > 0 && hasDividedImages && groupedArrays.length > 0 && (
+          <>
+            {groupedArrays.map((group, index) => (
+              <div key={index} className="overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm rounded-2xl hover:scale-[1.02] h-[450px]
+              transition-all duration-300 ease-in-out flex flex-col justify-center items-center shadow-lg shadow-black/40 hover:shadow-black/70">
+                <div className="h-full w-full">
+                  <div 
+                    className="aspect-square w-full h-full relative hover:blur-sm transition-all duration-300 ease-in-out flex items-center justify-center cursor-pointer"
+                    onClick={() => openGroup(group)}
+                  >
+                    <Image
+                      src={group[0].storage_url || "/placeholder.svg"}
+                      alt={group[0].name}
+                      fill
+                      className={`object-cover`}
+                    />
+                  </div>
+                </div>
+                <div className="w-full min-h-[170px] p-4 flex flex-col gap-3">
+                  <div>
+                    <h1 className="font-bold">{group[0].name}: grupo {index + 1}</h1>
+                    <div className="w-full flex justify-between items-center mt-1 text-zinc-400 text-[13px]">
+                      <span>{formatFileSize(group[0].size)} KB</span>
+                      <span>{formatDate(group[0].created_at)}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold tracking-wider">GRUPO</span>
+                    {/* <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleShare(group[0])}
+                      className="hover:bg-white/10 transition border-zinc-600"
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </Button> */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="hover:bg-white/5 transition">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-zinc-800 border-zinc-700">
+                        <DropdownMenuItem onClick={() => downloadImagesAsZip(group)}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDelete(group[0].id)} className="text-red-500">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+
         {isSharedView && (
-          <a href="/gallery" className="containerCard noselect">
+          <a href="/gallery" className="containerCard noselect min-h-[455px]">
             <div className="canvas">
               <div className="tracker tr-1"></div>
               <div className="tracker tr-2"></div>
@@ -261,6 +378,11 @@ export default function ImageGrid({ images, isSharedView = false, onDownload, on
         shareLink={shareLink}
       />
 
+      <GroupImagesModal
+        isOpen={groupImagesOpen.status}
+        onClose={() => setGroupImagesOpen({ status: false, images: [] })}
+        images={groupImagesOpen.images}
+      />
     </>
   )
 }

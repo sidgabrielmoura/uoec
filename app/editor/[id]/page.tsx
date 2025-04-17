@@ -6,7 +6,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, CheckCircle } from "lucide-react"
 import ImageEditor from "@/components/image-editor"
-import { getImageById, updateImage } from "@/utils/local-storage-utils"
 import type { StoredImage } from "@/types/image"
 import { getImageByIdFromSupabase, updateImageInSupabase } from "@/utils/supabase"
 
@@ -21,11 +20,7 @@ export default function EditorPage() {
   const [success, setSuccess] = useState<string | null>(null)
 
   useEffect(() => {
-    console.log("ID recebido:", id)
     if (!id) return
-    const token = localStorage.getItem('userEmail')
-    console.log("Token localStorage:", token)
-    console.log("ID recebido:", id)
   
     const loadImage = async () => {
       try {

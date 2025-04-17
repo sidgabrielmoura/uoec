@@ -3,21 +3,24 @@ import { Input } from "./ui/input";
 import { useDropzone } from "react-dropzone";
 import Image from "next/image"
 import { X } from "lucide-react";
+import "../app/globals.css"
 import { Button } from "./ui/button";
 
 interface ImageUploaderProps {
-    onUpload: (files: File[]) => void
+    onUpload: (filesOrEvent: { file: File; highQuality: boolean }[] | Event) => Promise<void>
+    highQuality?: boolean
     isUploading: boolean
 }
 export default function ImageHighUpload({ onUpload, isUploading }: ImageUploaderProps) {
-    const [previewHighImage, setPreviewHighImage] = useState<{file: File; preview: string}[]>([])
+    const [previewHighImage, setPreviewHighImage] = useState<{file: File; preview: string, highQuality: boolean}[]>([])
 
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
         const newPreviewFiles = acceptedFiles.map((file) => ({
             file,
             preview: URL.createObjectURL(file),
+            highQuality: true,
         }))
-        setPreviewHighImage((prev) => [...prev, ...newPreviewFiles])
+        setPreviewHighImage((prev) => [...prev, ...newPreviewFiles,])
     }, [])
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -37,7 +40,7 @@ export default function ImageHighUpload({ onUpload, isUploading }: ImageUploader
 
     const handleUpload = () => {
         if (previewHighImage.length > 0) {
-            onUpload(previewHighImage.map((pf) => pf.file))
+            onUpload(previewHighImage.map((pf) => ({ file: pf.file, highQuality: pf.highQuality })))
         }
     }
 
@@ -47,16 +50,16 @@ export default function ImageHighUpload({ onUpload, isUploading }: ImageUploader
                 <div className="flex justify-center w-full">
 
                 {previewHighImage.length === 0 ? (
-                    <label htmlFor="file" className="bg-indigo-500 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-indigo-500/80 transition-all duration-200 w-full">
-                        Carregar imagem temporária em alta resolução
+                    <label htmlFor="file" className="bg-indigo-500 text-white rounded-lg cursor-pointer hover:bg-indigo-500/80 transition-all duration-200 w-full boton-elegante">
+                        Carregar imagem em alta resolução
                         (opcional)
                     </label>
                 ) : (
                     <div className="flex justify-end w-full">
-                        <Button onClick={handleUpload} disabled={isUploading} className="bg-indigo-500 hover:bg-indigo-500 w-full">
+                        <Button onClick={handleUpload} disabled={isUploading} className="bg-indigo-500 hover:bg-indigo-500 w-full boton-elegante">
                             {isUploading
                             ? "carregando..."
-                            : `Confirmar imagem temporária em alta resolução ( 0${previewHighImage.length} )`}
+                            : `Confirmar imagem em alta resolução ( 0${previewHighImage.length} )`}
                         </Button>
                     </div>
                 )}
@@ -67,10 +70,10 @@ export default function ImageHighUpload({ onUpload, isUploading }: ImageUploader
                     {...getInputProps()}
                     className="hidden"
                     onChange={(e) => {
-                    if (e.target.files) {
-                        const files = Array.from(e.target.files)
-                        onDrop(files)
-                    }
+                        if (e.target.files) {
+                            const files = Array.from(e.target.files)
+                            onDrop(files)
+                        }
                     }}
                 />
                 </div>

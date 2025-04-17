@@ -4,9 +4,9 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Trash2 } from "lucide-react"
-import { getSharedLinks, deleteSharedLink } from "@/utils/local-storage-utils"
 import type { SharedLink } from "@/types/share"
 import { redirect } from "next/navigation"
+import { deleteSharedLink, getSharedLinks } from "@/utils/supabase"
 
 export default function SharePage() {
   const [sharedLinks, setSharedLinks] = useState<SharedLink[]>([])

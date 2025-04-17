@@ -5,12 +5,12 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Download } from "lucide-react"
 import JSZip from "jszip"
-import { getSharedLinkByUuid } from "@/utils/local-storage-utils"
 import type { StoredImage } from "@/types/image"
 import type { SharedLink } from "@/types/share"
 import ImageGrid from "@/components/image-grid"
 import { redirect, useParams } from "next/navigation"
 import { saveAs } from "file-saver"
+import { getSharedLinkByUuid } from "@/utils/supabase"
 
 export default function SharedLinkPage() {
   const { uuid } = useParams<{ uuid: string }>()
@@ -124,11 +124,6 @@ export default function SharedLinkPage() {
                   <Button variant="default" size="sm" className="gap-2 button-up bg-indigo-500 hover:bg-indigo-500" onClick={() => downloadImagesAsZip(images)}>
                     <Download className="h-4 w-4" />
                     Baixar Todas
-                  </Button>
-
-                  <Button disabled variant="default" size="sm" className="gap-2 button-up bg-indigo-500 hover:bg-indigo-500" onClick={() => downloadImagesAsZip(images)}>
-                    <Download className="h-4 w-4" />
-                    Baixar Todas (Máxima qualidade)
                   </Button>
                 </div>
                 <ImageGrid images={images} isSharedView={true} onDownload={downloadSelectedImage} />

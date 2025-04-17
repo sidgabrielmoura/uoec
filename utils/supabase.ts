@@ -1,9 +1,9 @@
 import { supabase } from "@/lib/supabase-client";
-import { fileToDataUrl } from "./local-storage-utils";
 import { StoredImage } from "@/types/image";
+import { SharedLink } from "@/types/share";
 import { v4 as uuidv4 } from "uuid"
 
-export async function saveImageToSupabase(file: File, email: string): Promise<{ success: boolean; error?: any; data?: any }> {
+export async function saveImageToSupabase(file: File, email: string, uuid?: string, highQuality?: boolean): Promise<{ success: boolean; error?: any; data?: any }> {
   if (!email) {
     console.error("email não encontrado")
   }
@@ -17,6 +17,8 @@ export async function saveImageToSupabase(file: File, email: string): Promise<{ 
       storage_url: dataUrl,
       created_at: new Date().toISOString(),
       user_token: email,
+      divide_id: uuid,
+      high_quality: highQuality ?? false
     }])
     .select()
 
@@ -141,6 +143,59 @@ export const createSharedLink = async (images: StoredImage[]) => {
   }
 }
 
+export const getSharedLinks = async (): Promise<SharedLink[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("shared_links")
+      .select("*")
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error("Erro ao buscar links compartilhados:", error)
+    return []
+  }
+}
+
+export async function deleteSharedLink(uuid: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("shared_links")
+      .delete()
+      .eq("uuid", uuid)
+
+    if (error) throw error
+    return true
+  } catch (error) {
+    console.error("Erro ao deletar link:", error)
+    return false
+  }
+}
+
+export async function getSharedLinkByUuid(uuid: string): Promise<{ success: boolean; data?: SharedLink; error?: any }> {
+  const { data, error } = await supabase
+    .from("shared_links")
+    .select("*")
+    .eq("uuid", uuid)
+    .single()
+
+  if (error) {
+    console.error("Erro ao buscar shared link:", error)
+    return { success: false, error }
+  }
+
+  return { success: true, data }
+}
+
 export function logout(){
   localStorage.removeItem('userEmail')
+}
+
+export const fileToDataUrl = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
 }

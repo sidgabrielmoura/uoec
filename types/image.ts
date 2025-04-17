@@ -5,9 +5,11 @@ export interface StoredImage {
   type: string
   storage_url: string
   user_token: string
-  uploadedAt: number
   created_at?: string
-  classified_at?: number
+  divide_id?: string
   edited_at?: string
+
+
   categories?: string[]
+  classified_at?: number
 }

@@ -4,12 +4,12 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useState } from "react";
 
-interface ShareLinkModalProps {
+interface LoginModalProps {
     isOpen: boolean
     onClose: () => void
 }
 
-export default function LoginModal({ isOpen, onClose }: ShareLinkModalProps) {
+export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const [email, setEmail] = useState<string>("")
     const [success, setSuccess] = useState(false)
     const [error, setError] = useState(false)
