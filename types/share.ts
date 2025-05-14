@@ -5,4 +5,6 @@ export interface SharedLink {
   images: StoredImage[]
   created_at: string
   expires_at: string
+  belogs_gallery: string
+  id: string
 }

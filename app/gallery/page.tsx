@@ -9,7 +9,7 @@ import type { StoredImage } from "@/types/image"
 import "../globals.css"
 import { redirect } from "next/navigation"
 import ShareLinkModal from "@/components/share-link-modal"
-import { clearSupabaseImages, createSharedLink, deleteImageFromSupabase, getImagesFromSupabase, logout } from "@/utils/supabase"
+import { clearSupabaseImages, createSharedLink, deleteImageFromSupabase, getImagesFromSupabase, logout, updateGalleryName } from "@/utils/supabase"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -25,6 +25,8 @@ export default function GalleryPage() {
   const [clearLoading, setClearLoading] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [findEmail, setFindEmail] = useState(false)
+  const [isEditing, setIsEditing] = useState(false);
+  const [value, setValue] = useState('')
 
   useEffect(() => {
     const email = localStorage.getItem("userEmail")
@@ -35,6 +37,11 @@ export default function GalleryPage() {
           if (response.success && response.data) {
             setImages(response.data as StoredImage[])
             console.log("imagens carregadas com sucesso:", response.data)
+
+            if(response.data && response.data[0].belogs_gallery){
+              setValue(response.data[0].belogs_gallery)
+            }else setValue('Galeria de imagens')
+
           } else {
             console.error("falha ao buscar imagens:", response.error)
           }
@@ -53,9 +60,11 @@ export default function GalleryPage() {
 
   const handleShare = async (image: StoredImage[]) => {
     setSelectedImage(image)
-  
+    console.log('nome da galeria:', image[0].belogs_gallery)
+
     try {
       const link = await createSharedLink([...image])
+      console.log('nome da galeria:', image)
       const fullUrl = `${window.location.origin}/share/${link.uuid}`
       setShareLink(fullUrl)
       setIsShareModalOpen(true)
@@ -93,6 +102,18 @@ export default function GalleryPage() {
     }, 1000);
   }
 
+  const handleChangeGalleryName = async () => {
+    const name = value
+    if(name.length < 4){
+      console.log('o nome da galeria tem que ser maior que 4 caracteres')
+      return
+    }
+
+    localStorage.setItem('gallery_name', value)
+    await updateGalleryName(name)
+    setIsEditing(false)
+  }
+
   return (
     <>
       <main className="container mx-auto px-4 py-8">
@@ -121,7 +142,7 @@ export default function GalleryPage() {
               <div className="sm:hidden">
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Menu/>
+                    <Menu />
                   </PopoverTrigger>
 
                   <PopoverContent className="w-60 p-2 rounded-xl space-y-2 shadow-xl bg-zinc-900 border-zinc-700 mr-2">
@@ -164,7 +185,7 @@ export default function GalleryPage() {
                   </div>
                 ) : (
                   <div onClick={() => setFindEmail(true)}>
-                    <Button size="sm" className="gap-2 bg-indigo-500 hover:bg-indigo-500 border border-indigo-300">
+                    <Button size="sm" className="gap-2 bg-indigo-500 hover:bg-indigo-500 border boton-elegante">
                       <LogIn className="h-4 w-4" />
                       Login
                     </Button>
@@ -219,9 +240,21 @@ export default function GalleryPage() {
               </div>
             </div>
 
-            <div>
-              <div className="flex flex-col -space-y-6 mb-8">
-                <h1 className="text-3xl font-bold mb-6">Galeria de imagens</h1>
+            <div className="mt-20">
+              <div onDoubleClick={() => setIsEditing(true)} className="mb-5">
+                {isEditing ? (
+                  <input
+                    className="text-6xl w-auto font-bold bg-transparent outline-none"
+                    value={value}
+                    autoFocus
+                    onBlur={handleChangeGalleryName}
+                    onChange={(e) => setValue(e.target.value)}
+                  />
+                ) : (
+                  <span className="text-6xl w-auto font-bold cursor-pointer">
+                    {value}
+                  </span>
+                )}
               </div>
 
               {isLoading ? (
@@ -231,7 +264,7 @@ export default function GalleryPage() {
               ) : images.length > 0 ? (
                 <ImageGrid images={images} onDelete={handleDelete} />
               ) : (
-                <div className="flex flex-col mt-52 space-y-4 items-center justify-center h-64 text-center">
+                <div className="flex flex-col mt-44 space-y-4 items-center justify-center h-64 text-center">
                   <div className="w-full flex gap-2">
                     {Array.from({ length: 4 }).map((_, i) => (
                       <div key={i} className="bg-zinc-600 pulse w-full h-[500px] rounded-2xl" />

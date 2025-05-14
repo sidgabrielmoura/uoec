@@ -92,7 +92,7 @@ export default function ImageEditor({ image, onSave }: ImageEditorProps) {
       })
   
       for (const file of files) {
-        await saveImageToSupabase(file, email || "", divide_id)
+        await saveImageToSupabase(file, email || "", image.belogs_gallery, divide_id)
       }
   
       setSuccess("Imagem Dividida com sucesso!")

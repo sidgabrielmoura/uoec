@@ -8,7 +8,7 @@ export interface StoredImage {
   created_at?: string
   divide_id?: string
   edited_at?: string
-
+  belogs_gallery: string
 
   categories?: string[]
   classified_at?: number

@@ -3,7 +3,7 @@ import { StoredImage } from "@/types/image";
 import { SharedLink } from "@/types/share";
 import { v4 as uuidv4 } from "uuid"
 
-export async function saveImageToSupabase(file: File, email: string, uuid?: string, highQuality?: boolean): Promise<{ success: boolean; error?: any; data?: any }> {
+export async function saveImageToSupabase(file: File, email: string, galleryName: string, uuid?: string, highQuality?: boolean): Promise<{ success: boolean; error?: any; data?: any }> {
   if (!email) {
     console.error("email não encontrado")
   }
@@ -18,6 +18,7 @@ export async function saveImageToSupabase(file: File, email: string, uuid?: stri
       created_at: new Date().toISOString(),
       user_token: email,
       divide_id: uuid,
+      belogs_gallery: galleryName ?? '', 
       high_quality: highQuality ?? false
     }])
     .select()
@@ -63,6 +64,28 @@ export const getImageByIdFromSupabase = async (id: string): Promise<StoredImage 
   }
   console.log("Dados recebidos:", data);
   return data.find((image: StoredImage) => image.id === id) || null;
+}
+
+export async function updateGalleryName(galleryName: string) {
+  const token = localStorage.getItem('userEmail')
+  if (!token) {
+    console.error("Token não encontrado no localStorage")
+    return { success: false, error: "Token não encontrado" }
+  }
+
+  const { data, error } = await supabase
+    .from('imagens')
+    .update({ belogs_gallery: galleryName })
+    .eq('user_token', token)
+    .select()
+
+  if (error) {
+    console.error("Erro ao atualizar nome da galeria:", error);
+    return { success: false, error };
+  }
+
+  window.location.reload()
+  return { success: true };
 }
 
 export async function updateImageInSupabase(image: StoredImage): Promise<{ success: boolean; error?: any }> {
@@ -129,9 +152,11 @@ export const createSharedLink = async (images: StoredImage[]) => {
     const createdAt = new Date().toISOString()
     const expiresAt = new Date(Date.now() + DEFAULT_EXPIRATION_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
+    console.log('nome da galeria:', images[0].belogs_gallery)
+
     const { data, error } = await supabase
       .from("shared_links")
-      .insert([{ uuid, images, created_at: createdAt, expires_at: expiresAt }])
+      .insert([{ uuid, images, created_at: createdAt, expires_at: expiresAt, belogs_gallery: images[0].belogs_gallery }])
       .select()
 
     if (error) throw error

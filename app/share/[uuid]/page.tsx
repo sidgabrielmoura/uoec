@@ -16,6 +16,7 @@ export default function SharedLinkPage() {
   const { uuid } = useParams<{ uuid: string }>()
   const [sharedLink, setSharedLink] = useState<SharedLink | null>(null)
   const [images, setImages] = useState<StoredImage[]>([])
+  const [sharedImage, setSharedImage] = useState<SharedLink>({} as SharedLink)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -34,6 +35,8 @@ export default function SharedLinkPage() {
         if (response.success && response.data) {
           setSharedLink(response.data)
           setImages(response.data.images)
+
+          setSharedImage(response.data)
         } else {
           setError("Shared link not found or has expired")
         }
@@ -51,7 +54,7 @@ export default function SharedLinkPage() {
   const downloadSelectedImage = (image: StoredImage) => {
     const link = document.createElement("a")
     link.href = image.storage_url
-    link.download = image.name
+    link.download = `${image.belogs_gallery}-${image.name}`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -61,7 +64,7 @@ export default function SharedLinkPage() {
     if(images.length === 1){
       const link = document.createElement("a")
       link.href = images[0].storage_url
-      link.download = images[0].name
+      link.download = `${images[0].belogs_gallery}-${images[0].name}`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -75,7 +78,7 @@ export default function SharedLinkPage() {
     })
 
     const content = await zip.generateAsync({ type: "blob" })
-    saveAs(content, "U.O.E.C_images.zip")
+    saveAs(content, `${images[0].belogs_gallery}.zip`)
   }
 
   if (isLoading) {
@@ -116,15 +119,16 @@ export default function SharedLinkPage() {
           </div>
 
           <div>
-            <h1 className="text-3xl font-bold mb-6">Imagens Compartilhadas</h1>
+              <h1 className="text-2xl font-bold ml-1">Imagens Compartilhadas</h1>
 
             {images.length > 0 ? (
               <div>
-                <div className="mb-4 flex gap-3 items-center">
-                  <Button variant="default" size="sm" className="gap-2 button-up bg-indigo-500 hover:bg-indigo-500" onClick={() => downloadImagesAsZip(images)}>
+                <div className="mb-4 flex gap-3 items-end">
+                  <Button variant="default" size="sm" className="gap-2 mb-2 button-up bg-indigo-500 hover:bg-indigo-500" onClick={() => downloadImagesAsZip(images)}>
                     <Download className="h-4 w-4" />
                     Baixar Todas
                   </Button>
+                  <h1 className="text-6xl font-bold text-violet-500 animate-pulse capitalize">{sharedImage.belogs_gallery}</h1>
                 </div>
                 <ImageGrid images={images} isSharedView={true} onDownload={downloadSelectedImage} />
               </div>

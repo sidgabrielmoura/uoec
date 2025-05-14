@@ -60,6 +60,7 @@ export default function ImageGrid({ images, isSharedView = false, onDownload, on
   
     try {
       const link = await createSharedLink([image])
+      console.log(image)
       const fullUrl = `${window.location.origin}/share/${link.uuid}`
       setIsShareModalOpen(true)
       setShareLink(fullUrl)

@@ -51,11 +51,9 @@ export default function SharePage() {
   }
 
   const [loading, setLoading] = useState(false)
-  const navigateTo = (path: string) => {
+  const navigateTo = (path: string, gallery_name?: string) => {
     setLoading(true)
-    setTimeout(() => {
-      redirect(path)
-    }, 1000);
+    redirect(path)
   }
 
   return (
@@ -104,7 +102,7 @@ export default function SharePage() {
                   {sharedLinks.map((link) => (
                     <tr key={link.uuid}>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div onClick={() => navigateTo(`/share/${link.uuid}`)} className="text-blue-300 hover:underline break-all cursor-pointer">
+                        <div onClick={() => navigateTo(`/share/${link.uuid}`, link.belogs_gallery)} className="text-blue-300 hover:underline break-all cursor-pointer">
                           {`${typeof window !== 'undefined' ? window.location.origin : ''}/share/${link.uuid}`}
                         </div>
                       </td>

@@ -59,8 +59,9 @@ export default function UploadPage() {
         }
 
         const highQuality = filesOrEvent instanceof Event ? false : filesOrEvent[0].highQuality
+        const galleryName = localStorage.getItem('gallery_name')
   
-        const result = await saveImageToSupabase(file, email, undefined, highQuality)
+        const result = await saveImageToSupabase(file, email, galleryName || '', undefined, highQuality)
         if (result.success) {
           successCount++
           setUploadedImages((prev) => [...prev, { file, highQuality: highQuality || false }])
