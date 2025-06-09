@@ -3,7 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Upload, ImageIcon, Share2, Phone } from "lucide-react"
 import '../app/globals.css'
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { redirect } from "next/navigation"
 
 export default function Home() {
@@ -16,7 +16,7 @@ export default function Home() {
   }
 
   return (
-    <main className="container mx-auto px-4 py-8 select-none">
+    <main className="mx-auto px-4 py-8 select-none bg-gradient-to-br from-zinc-700 via-zinc-900 to-zinc-700 h-screen">
       {loading ? (
         <div className="h-[calc(100vh-200px)] flex items-center justify-center">
           <div className="honeycomb">

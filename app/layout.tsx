@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
+import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -19,6 +20,7 @@ export default function RootLayout({
     <html lang="en" className="bg-zinc-800 text-zinc-50">
       <body className={`${inter.className}`}>
         <div className="min-h-screen">{children}</div>
+        <Toaster />
       </body>
     </html>
   )

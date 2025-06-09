@@ -255,13 +255,13 @@ export default function ImageGrid({ images, isSharedView = false, onDownload, on
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-zinc-800 border-zinc-700">
-                      <DropdownMenuItem onClick={() => handleDownload(image)}>
+                      <DropdownMenuItem onClick={() => handleDownload(image)} className="cursor-pointer">
                         <Download className="h-4 w-4 mr-2" />
                         Download
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(image.id)} className="text-red-500">
+                      <DropdownMenuItem onClick={() => handleDelete(image.id)} className="text-red-500 cursor-pointer">
                         <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
+                        Deletar
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -315,13 +315,13 @@ export default function ImageGrid({ images, isSharedView = false, onDownload, on
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-zinc-800 border-zinc-700">
-                        <DropdownMenuItem onClick={() => downloadImagesAsZip(group)}>
+                        <DropdownMenuItem onClick={() => downloadImagesAsZip(group)} className="cursor-pointer">
                           <Download className="h-4 w-4 mr-2" />
                           Download
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDelete(group[0].id)} className="text-red-500">
+                        <DropdownMenuItem onClick={() => handleDelete(group[0].id)} className="text-red-500 cursor-pointer">
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
+                          Deletar
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

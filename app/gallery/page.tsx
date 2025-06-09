@@ -27,6 +27,7 @@ export default function GalleryPage() {
   const [findEmail, setFindEmail] = useState(false)
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState('')
+  const [loadingShare, setLoadingShare] = useState(false)
 
   useEffect(() => {
     const email = localStorage.getItem("userEmail")
@@ -59,17 +60,19 @@ export default function GalleryPage() {
   }, [])
 
   const handleShare = async (image: StoredImage[]) => {
+    setLoadingShare(true)
     setSelectedImage(image)
-    console.log('nome da galeria:', image[0].belogs_gallery)
+    setIsShareModalOpen(true)
+    setShareLink('')
 
     try {
       const link = await createSharedLink([...image])
-      console.log('nome da galeria:', image)
       const fullUrl = `${window.location.origin}/share/${link.uuid}`
       setShareLink(fullUrl)
-      setIsShareModalOpen(true)
+      setLoadingShare(false)
     } catch (error) {
       console.error("Failed to create shared link:", error)
+      setLoadingShare(false)
     }
   }
 
@@ -164,7 +167,7 @@ export default function GalleryPage() {
                     </Button>
 
                     <Button
-                      disabled={images.length === 0}
+                      disabled={images.length === 0 || loadingShare}
                       onClick={() => handleShare([...images])}
                       className="w-full justify-start gap-2 bg-blue-700 hover:bg-blue-800"
                     >
@@ -193,7 +196,7 @@ export default function GalleryPage() {
                 )}
 
                 {userEmail && (
-                  <button disabled={!userEmail || images.length === 0} className={`${userEmail ? 'tooltip-container' : ''} disabled:opacity-50`} onClick={() => handleShare([...images])}>
+                  <button disabled={!userEmail || images.length === 0 || loadingShare} className={`${userEmail ? 'tooltip-container' : ''} disabled:opacity-50`} onClick={() => handleShare([...images])}>
                     <div className="button-content">
                       <span className="text">Compartilhar</span>
                       <svg
